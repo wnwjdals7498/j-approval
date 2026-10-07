@@ -65,6 +65,15 @@ j-approval만의 설계 결정을 적는다. 제품군 공통 결정은 [`j-grou
 - **결정:** role client `j-approval`의 `approval:use`(결재 메뉴·상신·내 문서·결재함)를 쓴다. 조직도 편집 `org:manage`는 기본 서비스 `j-groupware`에 있다(S3 카탈로그).
 - **이유:** 결재 처리 자격은 결재선(결정 3)이 정하므로 role은 메뉴 권한만 다룬다.
 
+### 결정 12. 알림 송신
+- **결정:**
+  - j-groupware 알림 센터(S17)에 알림을 보낸다.
+    - `approval.turn`: 다음 단계 지정자에게, 상신 때와 승인으로 단계가 넘어갈 때
+    - `approval.done`: 작성자에게, 승인·반려로 종결될 때
+  - 결재 처리 트랜잭션 안에서 `notification_outbox`에 기록한다. 송신 루프가 내부 키와 함께 loopback으로 보내고, 실패하면 재시도한다. `dedupKey`는 `문서id:단계:사건`이다.
+  - `link`는 j-groupware 결재 화면의 문서 경로다.
+- **이유:** 알림은 j-groupware 한 곳에서 표시한다(사용자). 처리와 알림 기록이 같은 트랜잭션이라 빠지지 않는다.
+
 ## 4. 데이터·검증·배포
 
 ### 결정 10. 결재 저장소
@@ -90,6 +99,7 @@ PMT 통합 project 분류 `j-approval`. Work "j-approval 최소 구현"의 완�
 | A6 결재선 검증 | 결정 4 검증·400, 스냅샷 저장, 지정자 `sub`·`tenant` 일치 검사 | A5 |
 | A7 완료 기준 테스트 | 실제 의존성 Vitest: N단계 승인, 반려, 비지정자 403, 결재선 규칙 위반 400, tenant 격리, 401·503 | A5, A6, j-auth I6 |
 | A8 고객 서버 검증 | `provision-service`로 설치, systemd·내부 포트, j-groupware 화면 상신 → 결재 → 이력, VM 대상 A7 | A7, j-groupware G10·G16·G18 |
+| A9 알림 송신 | 결정 12(outbox, 재시도, dedupKey), 실제 j-groupware 알림 센터 대상 테스트 | A7, j-groupware G22 |
 | A3 | 완료(Done): 변경 요청 반영 확인 | - |
 
-backlog: 합의·병렬·참조, 대결·전결 위임, 문서 양식 다종, 첨부, 알림(j-mail·메신저), OIDC 전환(S4).
+backlog: 합의·병렬·참조, 대결·전결 위임, 문서 양식 다종, 첨부.
