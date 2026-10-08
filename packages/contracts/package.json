@@ -1,0 +1,19 @@
+{
+  "name": "@j-approval/contracts",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Tenant-scoped sequential approval API contracts",
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  }
+}

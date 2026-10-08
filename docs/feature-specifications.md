@@ -1,6 +1,6 @@
 # j-approval 기능 명세
 
-작성일: 2026-10-08. 상태: **구현·인수 시험 전**. [목록](features.md), [결정](decisions.md), [공통 기준](../../j-groupware/docs/suite-feature-specifications.md)을 따른다. 문서 1종·순차 N단계이며 결재선과 화면은 j-groupware가 만든다.
+작성일: 2026-10-08. 상태: **백엔드 구현·실제 의존성 21개 시험 완료, 전체 인수 시험 미완료**. [목록](features.md), [결정](decisions.md), [공통 기준](../../j-groupware/docs/suite-feature-specifications.md)을 따른다. 문서 1종·순차 N단계이며 결재선과 화면은 j-groupware가 만든다.
 
 ## 입력·출력·상태
 
@@ -48,4 +48,27 @@ j-approval은 조직도나 실제 회원 존재를 외부 호출로 검증하지
 
 ## 확정 관문
 
-A2에서 endpoint·DTO·제목/본문 길이·페이지·상태/단계 번호·처리 버전·이력 형식과 사건 식별자를 고정한다. 삭제/권한 회수된 결재자의 진행 문서 처리 정책은 미정이며 자동 대결·재지정 기능을 추가하지 않는다. 합의·병렬·참조·다종 양식·첨부는 기존 이후 범위다.
+A2 계약은 아래와 `@j-approval/contracts@0.1.0`에 고정했다. 삭제/권한 회수된 결재자의 진행 문서 처리 정책은 미정이며 자동 대결·재지정 기능을 추가하지 않는다. 합의·병렬·참조·다종 양식·첨부는 기존 이후 범위다.
+
+
+## A2 고정 API 계약 (0.1.0)
+
+모든 업무 요청은 `approval:use`의 단일 audience `j-approval` bearer다. 허용 tenant는 설치 설정으로 한정하고 실제 tenant/actor는 token에서만 읽는다. JSON의 추가 필드·query의 추가 필드는 거절한다. body 상한은 64 KiB다.
+
+| Method·경로 | 입력 | 출력 |
+| --- | --- | --- |
+| POST `/approval/documents` | `{title, body, memberIds}` | 201 `ApprovalDocument` |
+| GET `/approval/documents` | `view=authored\|pending\|processed`, 선택 `cursor` | 200 `DocumentPage` |
+| GET `/approval/documents/:id` | UUID 문서 id | 200 `ApprovalDocument`, viewed 이력 추가 |
+| GET `/approval/documents/:id/history` | 선택 `cursor` | 200 `HistoryPage`, viewed 이력 추가 |
+| POST `/approval/documents/:id/decisions` | `{revision, action:"approve"}` 또는 `{revision, action:"reject", reason}` | 200 변경 `ApprovalDocument` |
+
+제목은 trim한 1~200, 본문은 공백만 있는 입력을 제외한 1~20,000, 반려 사유는 trim한 1~2,000 UTF-16 code unit이다. member id는 trim한 1~128자이며 control 문자와 중복/작성자를 거절한다. 단계는 1부터 시작하며 1~32단계다. 상신 `revision=0`, 승인·반려마다 +1이고 요청 revision은 0~2,147,483,647 정수다. `status=pending|approved|rejected`, 종결 `currentStage=null`이다.
+
+문서 summary는 `id,authorId,title,status,currentStage,revision,createdAt,updatedAt`이며 상세는 `body,memberIds`를 더한다. 응답은 tenant·token·username·DB 상세를 노출하지 않는다. 시간은 UTC ISO8601 문자열, 이력 id는 bigint 손실을 피하는 문자열이다. 이력 항목은 `id,action(submitted|viewed|approved|rejected),actorId,stage,reason,createdAt`이고 rejected 외 reason은 null이다.
+
+목록은 최신 생성 시각/UUID 내림차순, 이력은 최신 사건 시각/id 내림차순으로 50개씩 반환한다. `{items,nextCursor}`이며 끝은 null이다. cursor는 tenant/actor와 view 또는 문서 id에 묶이고 DB microsecond를 보존한다. 잘못된 cursor는 400이다. 새 상신·새 열람은 이전 page cursor 앞에 추가되므로 다음 page는 이전 cursor보다 오래된 항목만 반환한다.
+
+오류 JSON은 `{code,message,requestId}`다. 400 `invalid_input`, 401 `unauthenticated`, 403 `forbidden`, 404 `not_found`, 409 `conflict`, 503 `unavailable`를 사용한다. body 상한·media type 오류도 safe `invalid_input`이며 HTTP 413·415다. 입력 검증 거절은 저장하지 않고 상태/revision 충돌은 409다. 상신 retry를 자동으로 같은 문서로 합치는 idempotency 계약은 제공하지 않는다.
+
+outbox 사건은 `approval.turn|approval.done`, 순서 단계, 수신자 회원 id, `/approval/documents/:id` link, tenant별 `문서id:단계:사건` dedup key다. 현재는 같은 트랜잭션의 저장만 검증했다. [클라우드 실행 근거](cloud-approval-verification-2026-10-08.md)를 참고한다.

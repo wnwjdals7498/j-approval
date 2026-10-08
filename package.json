@@ -1,0 +1,35 @@
+{
+  "name": "j-approval",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=@j-approval/contracts && npm run build --workspace=@j-approval/server",
+    "check": "npm run build && npm run typecheck && npm test && npm run lint && npm run format:check",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run --config vitest.config.ts",
+    "test:integration": "npm run build && node scripts/run-integration.mjs",
+    "lint": "eslint apps packages tests",
+    "format:check": "prettier --check apps packages tests *.config.ts eslint.config.mjs scripts/*.mjs",
+    "start": "node apps/server/dist/main.js",
+    "test:registry": "npm run build --workspace=@j-approval/contracts && node --test tests/registry/contracts.test.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "@types/pg": "8.23.1",
+    "eslint": "10.11.0",
+    "jose": "6.2.12",
+    "prettier": "3.9.9",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.0",
+    "undici": "7.30.0",
+    "vitest": "4.1.0"
+  }
+}

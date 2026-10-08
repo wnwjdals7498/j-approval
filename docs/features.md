@@ -1,6 +1,6 @@
 # j-approval 기능 목록
 
-j-approval이 제공해야 하는 기능 목록이다. 근거는 [`decisions.md`](decisions.md)의 결정 번호와 제품군 공통 결정(`j-groupware/docs/architecture.md`의 S 번호)이고, 담당 Item은 PMT 통합 project 분류 `j-approval`이다. 모두 구현 전이다.
+j-approval이 제공해야 하는 기능 목록이다. 근거는 [`decisions.md`](decisions.md)의 결정 번호와 제품군 공통 결정(`j-groupware/docs/architecture.md`의 S 번호)이고, 담당 Item은 PMT 통합 project 분류 `j-approval`이다. A1/A2/A4/A5/A6 백엔드와 실제 의존성 21개 시험을 구현·실행했다. A9는 outbox 저장만 구현했고 화면·알림 배달·VM 전체 인수 시험은 미완료다. [실행 근거](cloud-approval-verification-2026-10-08.md)에서 검증 범위를 구분한다.
 
 화면은 j-groupware "결재" 메뉴(GW-34), 결재선 산출은 j-groupware 조직도(GW-23)가 맡는다.
 
