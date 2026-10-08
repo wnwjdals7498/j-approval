@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { PoolConfig } from "pg";
 import { assertCustomerTenantId } from "@j-auth/contracts";
+import { notificationEndpoint } from "./notification-sender.js";
 const repository = fileURLToPath(new URL("../../../", import.meta.url));
 const required = (env: NodeJS.ProcessEnv, key: string) => {
   const value = env[key];
@@ -67,5 +68,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     tlsCertificate: external(required(env, "JAP_TLS_CERTIFICATE")),
     tlsKey: external(required(env, "JAP_TLS_KEY")),
     database: loadDatabaseConfig(env),
+    ...(env.JAP_NOTIFICATION_URL || env.JAP_NOTIFICATION_KEY
+      ? {
+          notification: {
+            url: (() => {
+              const value = required(env, "JAP_NOTIFICATION_URL");
+              notificationEndpoint(value);
+              return value;
+            })(),
+            key: required(env, "JAP_NOTIFICATION_KEY"),
+          },
+        }
+      : {}),
   };
 }

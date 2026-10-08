@@ -3,9 +3,11 @@ import { Pool } from "pg";
 import { loadConfig } from "./config.js";
 import { migrate } from "./db/migrate.js";
 import { createApp } from "./app.js";
+import { NotificationSender } from "./notification-sender.js";
 async function main() {
   const config = loadConfig(),
     pool = new Pool(config.database);
+  let cleanup: () => Promise<void> = async () => undefined;
   try {
     await migrate(pool);
     const [cert, key] = await Promise.all([
@@ -27,6 +29,19 @@ async function main() {
       },
     });
     app.addHook("onClose", () => pool.end());
+    cleanup = () => app.close();
+    if (config.notification) {
+      const sender = new NotificationSender(
+        pool,
+        config.tenant,
+        config.notification.url,
+        config.notification.key,
+      );
+      app.addHook("onReady", async () => {
+        sender.start();
+      });
+      app.addHook("preClose", () => sender.stop());
+    }
     let closing = false;
     for (const signal of ["SIGINT", "SIGTERM"])
       process.once(signal, () => {
@@ -39,6 +54,7 @@ async function main() {
       });
     await app.listen({ host: "127.0.0.1", port: config.port });
   } catch {
+    await cleanup().catch(() => undefined);
     await pool.end().catch(() => undefined);
     throw new Error("Approval startup failed.");
   }

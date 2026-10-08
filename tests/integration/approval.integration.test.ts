@@ -83,7 +83,7 @@ describe("actual j-auth / Keycloak / PostgreSQL approval workflow", () => {
     expect(
       (await rt.pool.query("SELECT count(*)::int AS n FROM schema_migrations"))
         .rows[0].n,
-    ).toBe(1);
+    ).toBe(2);
   });
 
   it("accepts actual single-audience member tokens and commits the N-step snapshot with first turn", async () => {

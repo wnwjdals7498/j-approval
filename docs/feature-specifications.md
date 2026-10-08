@@ -1,6 +1,6 @@
 # j-approval 기능 명세
 
-작성일: 2026-10-08. 상태: **백엔드 구현·실제 의존성 21개 시험 완료, 전체 인수 시험 미완료**. [목록](features.md), [결정](decisions.md), [공통 기준](../../j-groupware/docs/suite-feature-specifications.md)을 따른다. 문서 1종·순차 N단계이며 결재선과 화면은 j-groupware가 만든다.
+작성일: 2026-10-08. 상태: **백엔드·결재 BFF·실제 알림 배달 구현 및 클라우드 검증 완료, 전체 인수 시험 미완료**. [목록](features.md), [결정](decisions.md), [공통 기준](../../j-groupware/docs/suite-feature-specifications.md)을 따른다. 문서 1종·순차 N단계이며 결재선과 화면은 j-groupware가 만든다.
 
 ## 입력·출력·상태
 
@@ -72,3 +72,7 @@ A2 계약은 아래와 `@j-approval/contracts@0.1.0`에 고정했다. 삭제/권
 오류 JSON은 `{code,message,requestId}`다. 400 `invalid_input`, 401 `unauthenticated`, 403 `forbidden`, 404 `not_found`, 409 `conflict`, 503 `unavailable`를 사용한다. body 상한·media type 오류도 safe `invalid_input`이며 HTTP 413·415다. 입력 검증 거절은 저장하지 않고 상태/revision 충돌은 409다. 상신 retry를 자동으로 같은 문서로 합치는 idempotency 계약은 제공하지 않는다.
 
 outbox 사건은 `approval.turn|approval.done`, 순서 단계, 수신자 회원 id, `/approval/documents/:id` link, tenant별 `문서id:단계:사건` dedup key다. 현재는 같은 트랜잭션의 저장만 검증했다. [클라우드 실행 근거](cloud-approval-verification-2026-10-08.md)를 참고한다.
+
+## A9 실제 배달
+
+[송신·복구 계약과 실제 증거](cloud-notification-delivery-2026-10-08.md)를 따른다. 새 migration 002의 committed lease로 다중 송신기를 조정하고 별도 loopback 키·고정 G22 endpoint로 배달한다. 수신 후 ACK 실패와 실제 SIGKILL/lease 만료 복구에도 같은 사건을 한 건으로 저장했다. VM/정식 화면 인수와 구독 상태 자동 투영은 미완료다.
